@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Voice Messaging App</title>
+    </head>
+    <body>
+        <h1>Voice Messaging App</h1>
+
+        <button id="startRecordingBtn" onclick="startRecording()">Start Recording</button>
+        <button id="stopRecordingBtn" onclick="stopRecording()" disabled>Stop Recording</button>
+
+        <script>
+            let mediaRecorder;
+            let chunks = [];
+            let mediaStream;
+            let name = prompt("Enter your name");
+            function startRecording() {
+                navigator.mediaDevices
+                    .getUserMedia({ audio: true })
+                    .then((stream) => {
+                        mediaStream = stream;
+                        mediaRecorder = new MediaRecorder(stream);
+
+                        mediaRecorder.ondataavailable = function (e) {
+                            chunks.push(e.data);
+                        };
+
+                        mediaRecorder.onstop = function () {
+                            const blob = new Blob(chunks, { type: "audio/wav" });
+                            const formData = new FormData();
+                            formData.append("audio", blob, `${name}_${new Date().getTime()}`);
+
+                            fetch("/upload-message", {
+                                method: "POST",
+                                body: formData,
+                            })
+                                .then((response) => {
+                                    if (response.ok) {
+                                        console.log("Message uploaded successfully");
+                                    } else {
+                                        console.error("Failed to upload message");
+                                    }
+                                })
+                                .catch((error) => {
+                                    console.error("Error uploading message:", error);
+                                });
+
+                            chunks = [];
+                            mediaStream.getTracks().forEach((track) => {
+                                track.stop();
+                            });
+                            mediaStream = null;
+                            mediaRecorder = null;
+                        };
+
+                        mediaRecorder.start();
+                        document.getElementById("startRecordingBtn").disabled = true;
+                        document.getElementById("stopRecordingBtn").disabled = false;
+                    })
+                    .catch((error) => {
+                        console.error("Error accessing microphone:", error);
+                    });
+            }
+
+            function stopRecording() {
+                if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                    mediaRecorder.stop();
+                    document.getElementById("startRecordingBtn").disabled = false;
+                    document.getElementById("stopRecordingBtn").disabled = true;
+                }
+            }
+        </script>
+    </body>
+</html>
