@@ -21,14 +21,17 @@
                     .then((response) => response.json())
                     .then((data) => {
                         const messageList = document.getElementById("messageList");
-                        messageList.innerHTML = "";
                         if (count !== data.length) {
                             const notificationSound = document.getElementById("notificationSound");
                             if (notificationSound) {
                                 notificationSound.play();
                             }
                             count = data.length;
+                        } else {
+                            return;
                         }
+                        messageList.innerHTML = "";
+
                         data.forEach((message) => {
                             const messageDiv = document.createElement("div");
                             const audio = document.createElement("audio");
